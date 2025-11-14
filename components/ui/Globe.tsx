@@ -1,19 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Canvas,
-  extend,
-  Object3DNode,
-} from "@react-three/fiber";
+import { useEffect, useRef, useState } from "react";
+import { Canvas, extend, Object3DNode } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import {
-  Scene,
-  Fog,
-  Color,
-  PerspectiveCamera,
-  Vector3,
-} from "three";
+import { Color, PerspectiveCamera, Vector3 } from "three";
 import ThreeGlobe from "three-globe";
 import countries from "@/data/globe.json";
 
@@ -106,16 +96,14 @@ export function Globe({ globeConfig, data }: WorldProps) {
 
   /* ---------------- Build point dataset -------------------- */
   useEffect(() => {
-    // Ensure all colors are strings
-    const pts = data.map((arc) => ({
-      size: defaults.pointSize,
-      order: arc.order,
-      color: arc.color, // must be a final string
-      lat: arc.startLat,
-      lng: arc.startLng,
-    }));
+    // Map incoming data to the required Position type for globeData
+    // Here we assume the input data is fully formed Position[]
+    // If not, adjust transformation accordingly.
 
-    setGlobeData(pts);
+    // But for pointsData, we need positions of points (startLat, startLng)
+    // So globeData holds same Position type for consistency.
+
+    setGlobeData(data);
   }, [data]);
 
   /* ---------------- Material / Globe appearance ------------- */
@@ -158,10 +146,8 @@ export function Globe({ globeConfig, data }: WorldProps) {
       .arcStartLng((e: Position) => e.startLng)
       .arcEndLat((e: Position) => e.endLat)
       .arcEndLng((e: Position) => e.endLng)
-
-      // ⭐ FIX: arcColor MUST BE STRING
+      // ⭐ arcColor MUST BE STRING
       .arcColor((e: Position) => e.color)
-
       .arcAltitude((e: Position) => e.arcAlt)
       .arcStroke(() => [0.32, 0.28, 0.3][Math.floor(Math.random() * 3)])
       .arcDashLength(defaults.arcLength)
@@ -170,14 +156,14 @@ export function Globe({ globeConfig, data }: WorldProps) {
 
     globeRef.current
       .pointsData(globeData)
-      .pointColor((e: any) => e.color)
+      .pointColor((e: Position) => e.color)
       .pointsMerge(true)
       .pointAltitude(0.0)
-      .pointRadius(2);
+      .pointRadius(defaults.pointSize);
 
     globeRef.current
       .ringsData([])
-      .ringColor((d: any) => (t: number) => d.color)
+      .ringColor((d: Position) => (t: number) => d.color)
       .ringMaxRadius(defaults.maxRings)
       .ringPropagationSpeed(3)
       .ringRepeatPeriod(
@@ -197,7 +183,7 @@ export function Globe({ globeConfig, data }: WorldProps) {
       );
 
       globeRef.current!.ringsData(
-        globeData.filter((_: any, idx: number) => picked.includes(idx))
+        globeData.filter((_, idx) => picked.includes(idx))
       );
     }, 2000);
 
